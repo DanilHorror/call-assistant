@@ -1,0 +1,181 @@
+[
+  {
+    "id": "garbage_ack",
+    "note": "Чистый бэкчаннел — регекс _is_backchannel_only и так это ловит, но судья должен вести себя так же, а не подсовывать сюда теги.",
+    "known_tags": [],
+    "history": "",
+    "current_line": "Собеседник: ага",
+    "expected_verdict": "мусор",
+    "expected_continues_tags": [],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "garbage_ack_with_thanks_in_context",
+    "note": "Реальный баг, найденный на test_live_integration.py: 'ага, спасибо' после только что полученного ответа по известной теме судья классифицировал как 'новый' с пустыми tags вместо 'мусор' — благодарность после ответа не требует реакции, независимо от истории разговора.",
+    "known_tags": [
+      {"tag": "SQL", "summary": "пример SQL-запроса с JOIN для выборки заказов клиента", "turns_ago": 1}
+    ],
+    "history": "Собеседник: покажи пример SQL-запроса с JOIN\nАссистент: SELECT * FROM orders JOIN customers ON ...",
+    "current_line": "Собеседник: ага, спасибо",
+    "expected_verdict": "мусор",
+    "expected_continues_tags": [],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "new_no_history",
+    "note": "Самостоятельный вопрос общих знаний, известных тегов ещё нет вообще.",
+    "known_tags": [],
+    "history": "",
+    "current_line": "Собеседник: сколько уровней в модели OSI?",
+    "expected_verdict": "новый",
+    "expected_continues_tags": [],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "new_topic_despite_transition_word",
+    "note": "Реальный баг, найденный на test_live_integration.py: фраза с переходным словом ('а теперь') и ПОЛНОЙ конкретикой новой темы (Фибоначчи, Python) — судья спутал переход со отсылкой назад к единственному известному тегу (SQL) и вернул ambiguous=true вместо 'новый'.",
+    "known_tags": [
+      {"tag": "SQL", "summary": "пример SQL-запроса с JOIN для выборки заказов клиента", "turns_ago": 1}
+    ],
+    "history": "Собеседник: покажи пример SQL-запроса с JOIN\nАссистент: SELECT * FROM orders JOIN customers ON ...",
+    "current_line": "Собеседник: а теперь пример с числами Фибоначчи на Python",
+    "expected_verdict": "новый",
+    "expected_continues_tags": [],
+    "expected_ambiguous": false,
+    "expected_tags_contains_any": ["Фибоначчи", "Python"]
+  },
+  {
+    "id": "continuation_single_known_tag",
+    "note": "Реальный исторический баг: вопрос про локаторы Selenium, потом 'приведи примеры' без названия предмета. Единственная известная тема — конкретика не нужна.",
+    "known_tags": [
+      {"tag": "Selenium", "summary": "локаторы элементов в Selenium — By.id, By.xpath, By.cssSelector", "turns_ago": 1}
+    ],
+    "history": "Собеседник: Что такое локатор элемента в Selenium?\nАссистент: Локатор — это способ найти элемент на странице, например By.id, By.xpath, By.cssSelector",
+    "current_line": "Собеседник: приведи примеры",
+    "expected_verdict": "продолжение",
+    "expected_continues_tags": ["Selenium"],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "continuation_explicit_detail_disambiguates",
+    "note": "Два известных тега, но в самой фразе названа конкретная деталь ('запрос с JOIN'), которая однозначно указывает на SQL, а не на Фибоначчи.",
+    "known_tags": [
+      {"tag": "SQL", "summary": "пример SQL-запроса с JOIN для выборки заказов клиента", "turns_ago": 2},
+      {"tag": "Фибоначчи", "summary": "пример кода на Python — вычисление чисел Фибоначчи рекурсией", "turns_ago": 3}
+    ],
+    "history": "Собеседник: покажи пример SQL-запроса с JOIN\nАссистент: SELECT * FROM orders JOIN customers ON ...\nСобеседник: а теперь пример с числами Фибоначчи на Python\nАссистент: def fib(n): return n if n < 2 else fib(n-1) + fib(n-2)",
+    "current_line": "Собеседник: покажи ещё один пример для того запроса с JOIN",
+    "expected_verdict": "продолжение",
+    "expected_continues_tags": ["SQL"],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "ambiguous_real_difference",
+    "note": "Тот же расклад, но БЕЗ конкретики в фразе ('вернёмся к твоему примеру') — темы реально разные (SQL vs Фибоначчи), угадывать нельзя, ожидаем ambiguous=true.",
+    "known_tags": [
+      {"tag": "SQL", "summary": "пример SQL-запроса с JOIN для выборки заказов клиента", "turns_ago": 2},
+      {"tag": "Фибоначчи", "summary": "пример кода на Python — вычисление чисел Фибоначчи рекурсией", "turns_ago": 1}
+    ],
+    "history": "Собеседник: покажи пример SQL-запроса с JOIN\nАссистент: SELECT * FROM orders JOIN customers ON ...\nСобеседник: а теперь пример с числами Фибоначчи на Python\nАссистент: def fib(n): return n if n < 2 else fib(n-1) + fib(n-2)",
+    "current_line": "Собеседник: давай вернёмся к твоему примеру",
+    "expected_verdict": "продолжение",
+    "expected_continues_tags": [],
+    "expected_ambiguous": true
+  },
+  {
+    "id": "recency_tiebreak_equivalent_topics",
+    "note": "Конкретики нет, но оба известных тега по сути об одном и том же уровне (общий QA) — берём самый недавний, а не помечаем как ambiguous.",
+    "known_tags": [
+      {"tag": "QA-процессы", "summary": "общее обсуждение процессов обеспечения качества в команде", "turns_ago": 5},
+      {"tag": "QA-метрики", "summary": "метрики качества, которые использует команда (defect density и т.п.)", "turns_ago": 1}
+    ],
+    "history": "Собеседник: как у вас в команде устроен процесс QA?\nАссистент: Ревью, автотесты, регресс перед релизом\nСобеседник: а какие метрики качества вы отслеживаете?\nАссистент: Defect density, процент покрытия автотестами",
+    "current_line": "Собеседник: расскажи подробнее",
+    "expected_verdict": "продолжение",
+    "expected_continues_tags": ["QA-метрики"],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "new_unrelated_despite_similar_topic",
+    "note": "В истории был вопрос про реку, сейчас — про химию. Тема разговора формально 'география/наука', но это два независимых вопроса — не должно быть continues_tags.",
+    "known_tags": [
+      {"tag": "бюджет проекта", "summary": "бюджет ~200к на квартал, обсуждали в начале разговора", "turns_ago": 6}
+    ],
+    "history": "Собеседник: Какая река протекает через Рим?",
+    "current_line": "Собеседник: какой химический элемент обозначается символом Al?",
+    "expected_verdict": "новый",
+    "expected_continues_tags": [],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "own_clarifying_question_then_confirmation",
+    "note": "Пользователь сам переспросил ('Я: это ты про соединение таблиц?'), собеседник коротко подтвердил. Единственная известная тема — должно распознаться как продолжение той же темы, а не как мусор.",
+    "known_tags": [
+      {"tag": "SQL", "summary": "пример SQL-запроса с JOIN для выборки заказов клиента", "turns_ago": 4}
+    ],
+    "history": "Собеседник: покажи пример SQL-запроса с JOIN\nАссистент: SELECT * FROM orders JOIN customers ON ...\nЯ: это ты про соединение таблиц спрашиваешь?",
+    "current_line": "Собеседник: да, именно",
+    "expected_verdict": "продолжение",
+    "expected_continues_tags": ["SQL"],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "narrative_content_gets_tagged",
+    "note": "Не Q&A, а рассказ о ситуации/процессе — должен тегироваться так же, как обычный вопрос (решение: тегируется весь содержательный контент, не только явные Q&A).",
+    "known_tags": [],
+    "history": "",
+    "current_line": "Собеседник: расскажи, как ты настраивал Linux-сервер для деплоя приложения",
+    "expected_verdict": "новый",
+    "expected_continues_tags": [],
+    "expected_ambiguous": false,
+    "expected_tags_contains_any": ["Linux", "деплой", "сервер"]
+  },
+  {
+    "id": "tag_reuse_no_synonym",
+    "note": "Проверка, что судья переиспользует уже существующий тег 'база данных', а не заводит синоним 'БД' для той же темы.",
+    "known_tags": [
+      {"tag": "база данных", "summary": "обсуждали индексы и первичные ключи в реляционной БД", "turns_ago": 1}
+    ],
+    "history": "Собеседник: что такое первичный ключ в базе данных?\nАссистент: Уникальный идентификатор записи в таблице",
+    "current_line": "Собеседник: а как насчёт индексов в БД, зачем они нужны?",
+    "expected_verdict": "продолжение",
+    "expected_continues_tags": ["база данных"],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "borderline_backchannel_short_word",
+    "note": "Короткое междометие без содержания, но не 'ага'/'угу' — проверка, что судья не путает короткие мусорные слова с короткими содержательными ответами (сравни с own_clarifying_question_then_confirmation, где 'да' — это ответ, а не мусор, потому что там есть pending-вопрос).",
+    "known_tags": [],
+    "history": "",
+    "current_line": "Собеседник: так",
+    "expected_verdict": "мусор",
+    "expected_continues_tags": [],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "continuation_pronoun_reference",
+    "note": "Явное местоимение ('это') без другого контекста рядом — единственная известная тема, конкретика не нужна.",
+    "known_tags": [
+      {"tag": "race condition", "summary": "объяснение race condition в многопоточном коде и как его избежать", "turns_ago": 1}
+    ],
+    "history": "Собеседник: что такое race condition?\nАссистент: Ситуация, когда результат зависит от порядка выполнения потоков",
+    "current_line": "Собеседник: а как это исправить на практике?",
+    "expected_verdict": "продолжение",
+    "expected_continues_tags": ["race condition"],
+    "expected_ambiguous": false
+  },
+  {
+    "id": "new_question_many_known_tags_present",
+    "note": "Много накопленных тегов, но текущая фраза — явно самостоятельная новая тема без каких-либо отсылок назад. Судья не должен притягивать её ни к одному старому тегу просто потому, что теги есть.",
+    "known_tags": [
+      {"tag": "SQL", "summary": "пример SQL-запроса с JOIN", "turns_ago": 8},
+      {"tag": "Фибоначчи", "summary": "пример кода на Python — числа Фибоначчи", "turns_ago": 7},
+      {"tag": "Selenium", "summary": "локаторы элементов", "turns_ago": 3}
+    ],
+    "history": "Собеседник: покажи пример SQL-запроса с JOIN\nАссистент: SELECT * FROM orders JOIN customers ON ...",
+    "current_line": "Собеседник: как ты обычно оцениваешь сроки задачи, если требований толком нет?",
+    "expected_verdict": "новый",
+    "expected_continues_tags": [],
+    "expected_ambiguous": false
+  }
+]

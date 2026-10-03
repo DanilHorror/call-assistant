@@ -1,0 +1,24 @@
+# Секреты и сертификаты (сертификат Минцифры скачивается отдельно, см. README)
+.env
+*.pem
+*.cer
+
+# Окружения и кэш
+venv/
+venv_qwen3_test/
+__pycache__/
+*.pyc
+
+# Записи звонков, логи, модели
+sessions/
+test_sessions/
+logs/
+models/
+
+# Результаты прогонов и служебные выгрузки
+*_results*.csv
+pool_sim_*.csv
+pool_similarity_results.csv
+pool_retrieval_review.txt
+structure.txt
+.pytest_cache/
